@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -10,27 +11,63 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
-	"unsafe"
 	"time"
+	"unsafe"
 )
 
 const (
-	W = 1000
-	H = 1000
+	W         = 500
+	H         = 500
+	fps       = time.Second / 60
+	pi        = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
+	viewRange = 1000
+	// The first point of the array of the Vectors in the ray struct
+	// is used as initial point for subsequent rays, for eg.
+	// Consider for following array : [{0, 1}, {13, 23}, {23, 24}, {1, 23}]
+	// There will be a total of 3 rays constructed from the array and
+	// they will be intersecting [{0, 1}, {13, 23}], [{0, 1}, {23, 24}]
+	// and [{0, 1}, {1, 23}] respectively
+	RAY_TYPE_CENTERED = 0x0
+	// The initial point in the array of vectors in the ray struct
+	// is every other vector, or the index has the index 2n where
+	// n is the number of ray being considered, for eg.
+
+	// Consider for following array : [{0, 1}, {13, 23}, {23, 24}, {1, 23}]
+	// There will be a total of 2 rays constructed from the array and
+	// they will be intersecting [{0, 1}, {13, 23}] and [{23, 24}, {1, 23}]
+	// respectively
+	RAY_TYPE_STRIP = 0x1
+	pointByteSize  = int32(13 * 4)
 )
 
 var (
-	projMat = mgl32.Ident4()
-	program uint32
-	CurrPoint mgl32.Vec2
-	eyePos mgl32.Vec3
-	viewMat mgl32.Mat4
-	fps = time.Second/60
-	framesDrawn = 0
+	viewMat        mgl32.Mat4
+	projMat        mgl32.Mat4
+	defaultViewMat mgl32.Mat4
+	AddState       byte
+	program        uint32
+	MouseX         float64
+	MouseY         float64
+	CurrPoint      mgl32.Vec2
+	Btns           []*Button
+	BtnState       = byte('C')
+	eyePos         mgl32.Vec3
+	LookAt         mgl32.Vec3
+	MouseRay       *Ray
+	framesDrawn    int
+	Ident          = mgl32.Ident4()
+	endianness     binary.ByteOrder
 )
 
 func main() {
 
+	var i int32 = 0x1
+	bs := (*[4]byte)(unsafe.Pointer(&i))
+	if bs[0] == 0 {
+		endianness = binary.BigEndian
+	} else {
+		endianness = binary.LittleEndian
+	}
 	runtime.LockOSThread()
 	orDie(glfw.Init())
 	//lotsOfPoints := DecodeTanishqsWierdFormat("lorenz_output3.txt")
@@ -112,4 +149,3 @@ func main() {
 		glfw.PollEvents()
 	}
 }
-

@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"math"
-
 	"github.com/eternalfrustation/bvg"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -12,6 +9,8 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
+	"io/ioutil"
+	"math"
 	"strconv"
 	//	"github.com/go-gl/mathgl/mgl32"
 	"strings"

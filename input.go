@@ -75,18 +75,7 @@ func HandleMouseButton(w *glfw.Window, button glfw.MouseButton, action glfw.Acti
 			// TODO: Add CurrPoint to an array of Lines in Bvg
 		default:
 			if action == glfw.Press {
-				for _, btn := range Btns {
 
-					MouseRay = NewRay(RAY_TYPE_CENTERED,
-						UnProject(viewMat, projMat),
-						mgl32.Vec3{CurrPoint[0], CurrPoint[1], 0},
-						mgl32.Vec3{CurrPoint[0], CurrPoint[1], 1},
-					)
-					iscolliding, collidingAt, collFaces := MouseRay.PolyCollide(btn.Geometry)
-					if iscolliding {
-						btn.CB(w, MouseX, MouseY, collidingAt, collFaces)
-					}
-				}
 			}
 		}
 	case glfw.MouseButtonRight:

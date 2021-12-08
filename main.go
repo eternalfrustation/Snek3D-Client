@@ -70,7 +70,6 @@ func main() {
 	}
 	runtime.LockOSThread()
 	orDie(glfw.Init())
-	//lotsOfPoints := DecodeTanishqsWierdFormat("lorenz_output3.txt")
 	// Close glfw when main exits
 	defer glfw.Terminate()
 
@@ -148,4 +147,60 @@ func main() {
 		// check for any events
 		glfw.PollEvents()
 	}
+}
+
+func NextFrame() (SnekPos []mgl32.Vec3, foodPos mgl32.Vec3) {
+	inputName := os.Args[1]
+	inputFile := os.Stdin
+	var err error
+	if inputName != "-" {
+		inputFile, err = os.Open(inputName)
+		orDie(err)
+	}
+	lenPointsBytes := make([]byte, 2)
+	inputFile.Read(lenPointsBytes)
+	lenPoints := binary.BigEndian.Uint16(lenPointsBytes)
+	lenBitsBytes := make([]byte, 1)
+	inputFile.Read(lenBitsBytes)
+	lenBits := lenBitsBytes[0]
+	coordBytes := make([]byte, lenBits>>3)
+	var bytesToFloats func(inputBytes []byte) float32
+	switch lenBits {
+	case 8:
+		bytesToFloats = func(inputBytes []byte) float32 {
+			return float32(inputBytes[0]) / float32(1<<8-1)
+		}
+	case 16:
+		bytesToFloats = func(inputByte []byte) float32 {
+			U16int := binary.BigEndian.Uint16(inputByte)
+			return float32(U16int) / float32(1>>16-1)
+		}
+	case 32:
+		bytesToFloats = func(inputByte []byte) float32 {
+			U32int := binary.BigEndian.Uint32(inputByte)
+			return float32(U32int) / float32(1<<32-1)
+		}
+	case 64:
+		bytesToFloats = func(inputByte []byte) float32 {
+			U64int := binary.BigEndian.Uint64(inputByte)
+			return float32(U64int) / float32(1<<64-1)
+		}
+	}
+	inputFile.Read(coordBytes)
+	x := bytesToFloats(coordBytes)
+	inputFile.Read(coordBytes)
+	y := bytesToFloats(coordBytes)
+	inputFile.Read(coordBytes)
+	z := bytesToFloats(coordBytes)
+	foodPos = mgl32.Vec3{x, y, z}
+	for i := uint64(3 + uint64(lenBits>>3)*3); i < uint64(lenPoints*uint16(lenBits>>3)); i += uint64(lenBits>>3) * 3 {
+		inputFile.Read(coordBytes)
+		x := bytesToFloats(coordBytes)
+		inputFile.Read(coordBytes)
+		y := bytesToFloats(coordBytes)
+		inputFile.Read(coordBytes)
+		z := bytesToFloats(coordBytes)
+		SnekPos = append(SnekPos, mgl32.Vec3{x, y, z})
+	}
+	return SnekPos, foodPos
 }

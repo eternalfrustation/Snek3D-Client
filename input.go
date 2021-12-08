@@ -15,12 +15,8 @@ func HandleKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, 
 		w.SetShouldClose(true)
 		w.Destroy()
 		os.Exit(0)
-	case glfw.KeyL:
-		AddState = byte('l')
-		// TODO: Add Key Detection for other shapes
 	case glfw.KeyUp:
-		eyePos[2] += 0.05
-
+		outputFile.Write([]byte(''))
 	case glfw.KeyDown:
 
 		eyePos[2] -= 0.05

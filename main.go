@@ -57,10 +57,26 @@ var (
 	framesDrawn    int
 	Ident          = mgl32.Ident4()
 	endianness     binary.ByteOrder
+	Snake []*Shape
+	Food *Shape
+	inputFile *os.File
+	outputFile *os.File
 )
 
 func main() {
-
+	inputName := os.Args[1]
+	outputName := os.Args[2]
+	inputFile = os.Stdin
+	outputFile = os.Stdout
+	var err error
+	if inputName != "-" {
+		inputFile, err = os.Open(inputName)
+		orDie(err)
+	}
+	if outputName != "-" {
+		outputFile, err = os.Open(outputName)
+		orDie(err)
+	}
 	var i int32 = 0x1
 	bs := (*[4]byte)(unsafe.Pointer(&i))
 	if bs[0] == 0 {
@@ -141,6 +157,10 @@ func main() {
 		// Actually draw something
 		//		b.Draw()
 		framesDrawn++
+		for _, v := range Snake {
+			v.GenVao()
+		}
+		Food.Draw()
 		//		fnt.GlyphMap['e'].Draw()
 		// display everything that was drawn
 		window.SwapBuffers()
@@ -150,13 +170,6 @@ func main() {
 }
 
 func NextFrame() (SnekPos []mgl32.Vec3, foodPos mgl32.Vec3) {
-	inputName := os.Args[1]
-	inputFile := os.Stdin
-	var err error
-	if inputName != "-" {
-		inputFile, err = os.Open(inputName)
-		orDie(err)
-	}
 	lenPointsBytes := make([]byte, 2)
 	inputFile.Read(lenPointsBytes)
 	lenPoints := binary.BigEndian.Uint16(lenPointsBytes)

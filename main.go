@@ -57,8 +57,8 @@ var (
 	framesDrawn    int
 	Ident          = mgl32.Ident4()
 	endianness     binary.ByteOrder
-	Snake          []*Shape
-	Food           *Shape
+	Snake          []mgl32.Vec3
+	Food           mgl32.Vec3
 	inputFile      *os.File
 	outputFile     *os.File
 )
@@ -149,7 +149,32 @@ func main() {
 	// GLFW Initialization
 	CurrPoint = mgl32.Vec2{0, 0}
 	eyePos = mgl32.Vec3{0, 0, 1}
-
+	var WhiteCube *Shape
+	var RedCube *Shape
+	WhiteCube.Pts = []*Point{
+		PC(1, 1, 1, 1, 1, 1, 1),
+		PC(-1, 1, 1, 1, 1, 1, 1),
+		PC(-1, -1, 1, 1, 1, 1, 1),
+		PC(-1, -1, -1, 1, 1, 1, 1),
+		PC(1, -1, -1, 1, 1, 1, 1),
+		PC(1, 1, -1, 1, 1, 1, 1),
+		PC(1, -1, 1, 1, 1, 1, 1),
+		PC(-1, 1, -1, 1, 1, 1, 1),
+	}
+	RedCube.Pts = []*Point{
+		PC(1, 1, 1, 1, 0, 0, 1),
+		PC(-1, 1, 1, 1, 0, 0, 1),
+		PC(-1, -1, 1, 1, 0, 0, 1),
+		PC(-1, -1, -1, 1, 0, 0, 1),
+		PC(1, -1, -1, 1, 0, 0, 1),
+		PC(1, 1, -1, 1, 0, 0, 1),
+		PC(1, -1, 1, 1, 0, 0, 1),
+		PC(-1, 1, -1, 1, 0, 0, 1),
+	}
+	WhiteCube.SetTypes(gl.LINE_LOOP)
+	RedCube.SetTypes(gl.LINE_LOOP)
+	WhiteCube.GenVao()
+	RedCube.GenVao()
 	for !window.ShouldClose() {
 		time.Sleep(fps)
 		// Clear everything that was drawn previously
@@ -158,9 +183,10 @@ func main() {
 		//		b.Draw()
 		framesDrawn++
 		for _, v := range Snake {
-			v.GenVao()
+			WhiteCube.ModelMat = mgl32.Translate3D(v.X(), v.Y(), v.Z())
+			WhiteCube.Draw()
 		}
-		Food.Draw()
+		RedCube.ModelMat = mgl32.Translate3D(Food.X(), Food.Y(), Food.Z())
 		//		fnt.GlyphMap['e'].Draw()
 		// display everything that was drawn
 		window.SwapBuffers()

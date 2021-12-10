@@ -24,29 +24,22 @@ func HandleKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, 
 	case glfw.KeyRight:
 
 		outputFile.Write([]byte{byte('z')})
-		eyePos[0] -= 0.05
 
 	case glfw.KeyLeft:
 
 		outputFile.Write([]byte{byte('Z')})
-		eyePos[0] += 0.05
 
 	case glfw.KeySpace:
 
 		outputFile.Write([]byte{byte('y')})
-		eyePos[1] -= 0.05
 
 	case glfw.KeyZ:
 
-		outputFile.Write([]byte{byte('Z')})
-		eyePos[1] += 0.05
+		outputFile.Write([]byte{byte('Y')})
+	default:
+		outputFile.Write([]byte{byte('F')})
 	}
-	//	fmt.Println(program)
-	LookAt = eyePos.Add(LookAt)
-	UpdateView(
-		LookAt,
-		eyePos,
-	)
+	Snake, Food := NextFrame()
 }
 
 func HandleMouseMovement(w *glfw.Window, xpos, ypos float64) {

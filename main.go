@@ -57,10 +57,10 @@ var (
 	framesDrawn    int
 	Ident          = mgl32.Ident4()
 	endianness     binary.ByteOrder
-	Snake []*Shape
-	Food *Shape
-	inputFile *os.File
-	outputFile *os.File
+	Snake          []*Shape
+	Food           *Shape
+	inputFile      *os.File
+	outputFile     *os.File
 )
 
 func main() {

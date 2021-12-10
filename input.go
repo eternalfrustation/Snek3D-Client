@@ -16,25 +16,29 @@ func HandleKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, 
 		w.Destroy()
 		os.Exit(0)
 	case glfw.KeyUp:
-		outputFile.Write([]byte(''))
+		outputFile.Write([]byte{byte('x')})
 	case glfw.KeyDown:
 
-		eyePos[2] -= 0.05
+		outputFile.Write([]byte{byte('X')})
 
 	case glfw.KeyRight:
 
+		outputFile.Write([]byte{byte('z')})
 		eyePos[0] -= 0.05
 
 	case glfw.KeyLeft:
 
+		outputFile.Write([]byte{byte('Z')})
 		eyePos[0] += 0.05
 
 	case glfw.KeySpace:
 
+		outputFile.Write([]byte{byte('y')})
 		eyePos[1] -= 0.05
 
 	case glfw.KeyZ:
 
+		outputFile.Write([]byte{byte('Z')})
 		eyePos[1] += 0.05
 	}
 	//	fmt.Println(program)

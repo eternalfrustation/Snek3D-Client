@@ -41,26 +41,31 @@ const (
 )
 
 var (
-	viewMat        mgl32.Mat4
-	projMat        mgl32.Mat4
-	defaultViewMat mgl32.Mat4
-	AddState       byte
-	program        uint32
-	MouseX         float64
-	MouseY         float64
-	CurrPoint      mgl32.Vec2
-	Btns           []*Button
-	BtnState       = byte('C')
-	eyePos         mgl32.Vec3
-	LookAt         mgl32.Vec3
-	MouseRay       *Ray
-	framesDrawn    int
-	Ident          = mgl32.Ident4()
-	endianness     binary.ByteOrder
-	Snake          []mgl32.Vec3
-	Food           mgl32.Vec3
-	inputFile      *os.File
-	outputFile     *os.File
+	viewMat                         mgl32.Mat4
+	projMat                         mgl32.Mat4
+	defaultViewMat                  mgl32.Mat4
+	AddState                        byte
+	program                         uint32
+	MouseX                          float64
+	MouseY                          float64
+	CurrPoint                       mgl32.Vec2
+	Btns                            []*Button
+	BtnState                        = byte('C')
+	eyePos                          mgl32.Vec3
+	LookAt                          mgl32.Vec3
+	MouseRay                        *Ray
+	framesDrawn                     int
+	Ident                           = mgl32.Ident4()
+	endianness                      binary.ByteOrder
+	Snake                           []mgl32.Vec3
+	Food                            mgl32.Vec3
+	inputFile                       *os.File
+	outputFile                      *os.File
+	coordBytes                      []byte
+	bytesToU64                      func(inputBytes []byte) uint64
+	lenPoints                       uint16
+	lenBits                         byte
+	maxWorldX, maxWorldY, maxWorldZ float64
 )
 
 func main() {
@@ -175,6 +180,35 @@ func main() {
 	RedCube.SetTypes(gl.LINE_LOOP)
 	WhiteCube.GenVao()
 	RedCube.GenVao()
+	lenBitsBytes := make([]byte, 1)
+	inputFile.Read(lenBitsBytes)
+	lenBits = lenBitsBytes[0]
+	coordBytes = make([]byte, lenBits>>3)
+	switch lenBits {
+	case 8:
+		bytesToU64 = func(inputBytes []byte) uint64 {
+			return uint64(inputBytes[0])
+		}
+	case 16:
+		bytesToU64 = func(inputByte []byte) uint64 {
+			return uint64(binary.BigEndian.Uint16(inputByte))
+
+		}
+	case 32:
+		bytesToU64 = func(inputByte []byte) uint64 {
+			return uint64(binary.BigEndian.Uint32(inputByte))
+		}
+	case 64:
+		bytesToU64 = func(inputByte []byte) uint64 {
+			return binary.BigEndian.Uint64(inputByte)
+		}
+	}
+	inputFile.Read(coordBytes)
+	maxWorldX = float64(bytesToU64(coordBytes))
+	inputFile.Read(coordBytes)
+	maxWorldY = float64(bytesToU64(coordBytes))
+	inputFile.Read(coordBytes)
+	maxWorldZ = float64(bytesToU64(coordBytes))
 	for !window.ShouldClose() {
 		time.Sleep(fps)
 		// Clear everything that was drawn previously
@@ -199,47 +233,21 @@ func main() {
 func NextFrame() (SnekPos []mgl32.Vec3, foodPos mgl32.Vec3) {
 	lenPointsBytes := make([]byte, 2)
 	inputFile.Read(lenPointsBytes)
-	lenPoints := binary.BigEndian.Uint16(lenPointsBytes)
-	lenBitsBytes := make([]byte, 1)
-	inputFile.Read(lenBitsBytes)
-	lenBits := lenBitsBytes[0]
-	coordBytes := make([]byte, lenBits>>3)
-	var bytesToFloats func(inputBytes []byte) float32
-	switch lenBits {
-	case 8:
-		bytesToFloats = func(inputBytes []byte) float32 {
-			return float32(inputBytes[0]) / float32(1<<8-1)
-		}
-	case 16:
-		bytesToFloats = func(inputByte []byte) float32 {
-			U16int := binary.BigEndian.Uint16(inputByte)
-			return float32(U16int) / float32(1>>16-1)
-		}
-	case 32:
-		bytesToFloats = func(inputByte []byte) float32 {
-			U32int := binary.BigEndian.Uint32(inputByte)
-			return float32(U32int) / float32(1<<32-1)
-		}
-	case 64:
-		bytesToFloats = func(inputByte []byte) float32 {
-			U64int := binary.BigEndian.Uint64(inputByte)
-			return float32(U64int) / float32(1<<64-1)
-		}
-	}
+	lenPoints = binary.BigEndian.Uint16(lenPointsBytes)
 	inputFile.Read(coordBytes)
-	x := bytesToFloats(coordBytes)
+	foodX := float32(float64(bytesToU64(coordBytes)) / maxWorldX)
 	inputFile.Read(coordBytes)
-	y := bytesToFloats(coordBytes)
+	foodY := float32(float64(bytesToU64(coordBytes)) / maxWorldY)
 	inputFile.Read(coordBytes)
-	z := bytesToFloats(coordBytes)
-	foodPos = mgl32.Vec3{x, y, z}
+	foodZ := float32(float64(bytesToU64(coordBytes)) / maxWorldZ)
+	foodPos = mgl32.Vec3{foodX, foodY, foodZ}
 	for i := uint64(3 + uint64(lenBits>>3)*3); i < uint64(lenPoints*uint16(lenBits>>3)); i += uint64(lenBits>>3) * 3 {
 		inputFile.Read(coordBytes)
-		x := bytesToFloats(coordBytes)
+		x := float32(float64(bytesToU64(coordBytes)) / maxWorldX)
 		inputFile.Read(coordBytes)
-		y := bytesToFloats(coordBytes)
+		y := float32(float64(bytesToU64(coordBytes)) / maxWorldY)
 		inputFile.Read(coordBytes)
-		z := bytesToFloats(coordBytes)
+		z := float32(float64(bytesToU64(coordBytes)) / maxWorldZ)
 		SnekPos = append(SnekPos, mgl32.Vec3{x, y, z})
 	}
 	return SnekPos, foodPos

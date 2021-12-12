@@ -187,6 +187,7 @@ func main() {
 			WhiteCube.Draw()
 		}
 		RedCube.ModelMat = mgl32.Translate3D(Food.X(), Food.Y(), Food.Z())
+		RedCube.Draw()
 		//		fnt.GlyphMap['e'].Draw()
 		// display everything that was drawn
 		window.SwapBuffers()

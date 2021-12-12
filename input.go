@@ -39,7 +39,7 @@ func HandleKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, 
 	default:
 		outputFile.Write([]byte{byte('F')})
 	}
-	Snake, Food := NextFrame()
+	Snake, Food = NextFrame()
 }
 
 func HandleMouseMovement(w *glfw.Window, xpos, ypos float64) {

@@ -154,9 +154,7 @@ func main() {
 	// GLFW Initialization
 	CurrPoint = mgl32.Vec2{0, 0}
 	eyePos = mgl32.Vec3{0, 0, 1}
-	var WhiteCube *Shape
-	var RedCube *Shape
-	WhiteCube.Pts = []*Point{
+	WhiteCube := NewShape(Ident, program, []*Point{
 		PC(1, 1, 1, 1, 1, 1, 1),
 		PC(-1, 1, 1, 1, 1, 1, 1),
 		PC(-1, -1, 1, 1, 1, 1, 1),
@@ -165,8 +163,8 @@ func main() {
 		PC(1, 1, -1, 1, 1, 1, 1),
 		PC(1, -1, 1, 1, 1, 1, 1),
 		PC(-1, 1, -1, 1, 1, 1, 1),
-	}
-	RedCube.Pts = []*Point{
+	})
+	RedCube := NewShape(Ident, program, []*Point{
 		PC(1, 1, 1, 1, 0, 0, 1),
 		PC(-1, 1, 1, 1, 0, 0, 1),
 		PC(-1, -1, 1, 1, 0, 0, 1),
@@ -175,7 +173,7 @@ func main() {
 		PC(1, 1, -1, 1, 0, 0, 1),
 		PC(1, -1, 1, 1, 0, 0, 1),
 		PC(-1, 1, -1, 1, 0, 0, 1),
-	}
+	})
 	WhiteCube.SetTypes(gl.LINE_LOOP)
 	RedCube.SetTypes(gl.LINE_LOOP)
 	WhiteCube.GenVao()

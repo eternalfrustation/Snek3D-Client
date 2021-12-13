@@ -163,7 +163,7 @@ func main() {
 		PC(1, 1, -1, 1, 1, 1, 1),
 		PC(1, -1, 1, 1, 1, 1, 1),
 		PC(-1, 1, -1, 1, 1, 1, 1),
-	})
+	}...)
 	RedCube := NewShape(Ident, program, []*Point{
 		PC(1, 1, 1, 1, 0, 0, 1),
 		PC(-1, 1, 1, 1, 0, 0, 1),
@@ -173,7 +173,7 @@ func main() {
 		PC(1, 1, -1, 1, 0, 0, 1),
 		PC(1, -1, 1, 1, 0, 0, 1),
 		PC(-1, 1, -1, 1, 0, 0, 1),
-	})
+	}...)
 	WhiteCube.SetTypes(gl.LINE_LOOP)
 	RedCube.SetTypes(gl.LINE_LOOP)
 	WhiteCube.GenVao()

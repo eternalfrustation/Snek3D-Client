@@ -5,6 +5,7 @@
 *.so
 *.dylib
 
+Snek3D
 Snek3D-Frontend
 
 # Test binary, built with `go test -c`

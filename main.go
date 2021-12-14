@@ -189,16 +189,16 @@ func main() {
 		}
 	case 16:
 		bytesToU64 = func(inputByte []byte) uint64 {
-			return uint64(binary.BigEndian.Uint16(inputByte))
+			return uint64(endianness.Uint16(inputByte))
 
 		}
 	case 32:
 		bytesToU64 = func(inputByte []byte) uint64 {
-			return uint64(binary.BigEndian.Uint32(inputByte))
+			return uint64(endianness.Uint32(inputByte))
 		}
 	case 64:
 		bytesToU64 = func(inputByte []byte) uint64 {
-			return binary.BigEndian.Uint64(inputByte)
+			return endianness.Uint64(inputByte)
 		}
 	}
 	inputFile.Read(coordBytes)

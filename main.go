@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
-	"syscall"
 	"time"
 	"unsafe"
 )
@@ -76,11 +75,11 @@ func main() {
 	outputFile = os.Stdout
 	var err error
 	if inputName != "-" {
-		inputFile, err = os.OpenFile(inputName, os.O_RDONLY|syscall.O_NONBLOCK, 0600)
+		inputFile, err = os.OpenFile(inputName, os.O_RDONLY, 0600)
 		orDie(err)
 	}
 	if outputName != "-" {
-		outputFile, err = os.OpenFile(outputName, os.O_RDONLY|syscall.O_NONBLOCK, 0600)
+		outputFile, err = os.OpenFile(outputName, os.O_WRONLY, 0600)
 
 		orDie(err)
 	}

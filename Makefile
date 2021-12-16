@@ -2,7 +2,8 @@ release:
 	go fmt
 	go mod tidy
 	go build -ldflags "-s -w"
-build:
+
+debug:
 	go fmt
 	go mod tidy
-	go build
+	go build -ldflags "-n"

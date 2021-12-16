@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
+	"syscall"
 	"time"
 	"unsafe"
 )
@@ -75,27 +76,33 @@ func main() {
 	outputFile = os.Stdout
 	var err error
 	if inputName != "-" {
-		inputFile, err = os.OpenFile(inputName, os.O_RDONLY, 0600)
+		err = syscall.Mkfifo(inputName, 0666)
+		orDie(err)
+		inputFile, err = os.OpenFile(inputName, os.O_RDONLY, os.ModeNamedPipe)
 		orDie(err)
 	}
 	if outputName != "-" {
-		outputFile, err = os.OpenFile(outputName, os.O_WRONLY, 0600)
-
+		err = syscall.Mkfifo(outputName, 0666)
 		orDie(err)
+		outputFile, err = os.OpenFile(outputName, os.O_WRONLY, os.ModeNamedPipe)
 	}
-	var i int32 = 0x1
-	bs := (*[4]byte)(unsafe.Pointer(&i))
-	if bs[0] == 0 {
-		endianness = binary.BigEndian
-	} else {
+	buf := [2]byte{}
+	*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)
+
+	switch buf {
+	case [2]byte{0xCD, 0xAB}:
 		endianness = binary.LittleEndian
+	case [2]byte{0xAB, 0xCD}:
+		endianness = binary.BigEndian
+	default:
+		panic("Could not determine native endianness.")
 	}
 	runtime.LockOSThread()
 	orDie(glfw.Init())
 	// Close glfw when main exits
 	defer glfw.Terminate()
-
 	// Window Properties
+
 	glfw.WindowHint(glfw.Resizable, glfw.True)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
@@ -135,8 +142,6 @@ func main() {
 	prog, err := newProg(string(vertexShader), string(fragmentShader))
 	orDie(err)
 	// Check for the version
-	version := gl.GoStr(gl.GetString(gl.VERSION))
-	fmt.Println("OpenGL Version", version)
 	// Main draw loop
 
 	// Set the refresh function for the window
@@ -183,26 +188,8 @@ func main() {
 	inputFile.Read(lenBitsBytes)
 	lenBits = lenBitsBytes[0]
 	coordBytes = make([]byte, lenBits>>3)
-	switch lenBits {
-	case 8:
-		bytesToU64 = func(inputBytes []byte) uint64 {
-			return uint64(inputBytes[0])
-		}
-	case 16:
-		bytesToU64 = func(inputByte []byte) uint64 {
-			return uint64(endianness.Uint16(inputByte))
-
-		}
-	case 32:
-		bytesToU64 = func(inputByte []byte) uint64 {
-			return uint64(endianness.Uint32(inputByte))
-		}
-	case 64:
-		bytesToU64 = func(inputByte []byte) uint64 {
-			return endianness.Uint64(inputByte)
-		}
-	}
 	inputFile.Read(coordBytes)
+	bytesToU64 = endianness.Uint64
 	maxWorldX = float64(bytesToU64(coordBytes))
 	inputFile.Read(coordBytes)
 	maxWorldY = float64(bytesToU64(coordBytes))
@@ -217,7 +204,6 @@ func main() {
 		framesDrawn++
 		for _, v := range Snake {
 			WhiteCube.ModelMat = mgl32.Translate3D(v.X(), v.Y(), v.Z())
-			fmt.Println(WhiteCube.Vao, WhiteCube.ModelMat)
 			WhiteCube.Draw()
 		}
 		RedCube.ModelMat = mgl32.Translate3D(Food.X(), Food.Y(), Food.Z())

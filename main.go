@@ -18,7 +18,7 @@ import (
 const (
 	W         = 500
 	H         = 500
-	fps       = time.Second / 60
+	fps       = time.Second / 2
 	pi        = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
 	viewRange = 1000
 	// The first point of the array of the Vectors in the ray struct
@@ -217,6 +217,7 @@ func main() {
 		framesDrawn++
 		for _, v := range Snake {
 			WhiteCube.ModelMat = mgl32.Translate3D(v.X(), v.Y(), v.Z())
+			fmt.Println(WhiteCube.Vao, WhiteCube.ModelMat)
 			WhiteCube.Draw()
 		}
 		RedCube.ModelMat = mgl32.Translate3D(Food.X(), Food.Y(), Food.Z())

@@ -109,7 +109,7 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	// Create the window with the above hints
-	window, err := glfw.CreateWindow(W, H, "Bvg Editor", nil, nil)
+	window, err := glfw.CreateWindow(W, H, "Snek3D-Frontend", nil, nil)
 	orDie(err)
 	// Load the icon file
 	icoFile, err := os.Open("ico.png")

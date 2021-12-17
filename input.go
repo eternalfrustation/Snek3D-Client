@@ -9,9 +9,9 @@ import (
 )
 
 func HandleKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	LookAt = LookAt.Sub(eyePos)
 	switch key {
 	case glfw.KeyEscape:
+		outputFile.Write([]byte{byte('E')})
 		w.SetShouldClose(true)
 		w.Destroy()
 		os.Exit(0)
@@ -40,6 +40,7 @@ func HandleKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, 
 		outputFile.Write([]byte{byte('F')})
 	}
 	Snake, Food = NextFrame()
+	fmt.Fprintf(os.Stderr, "Snake: %+v, Food: %+v", Snake, Food)
 }
 
 func HandleMouseMovement(w *glfw.Window, xpos, ypos float64) {

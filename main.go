@@ -6,12 +6,12 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"golang.org/x/sys/unix"
 	"image"
 	"image/png"
 	"io/ioutil"
 	"os"
 	"runtime"
-	"syscall"
 	"time"
 	"unsafe"
 )
@@ -76,13 +76,20 @@ func main() {
 	outputFile = os.Stdout
 	var err error
 	if inputName != "-" {
-		err = syscall.Mkfifo(inputName, 0666)
+		os.Stderr.WriteString(inputName)
+		os.Stderr.WriteString("is the input \n")
+		os.Remove(inputName)
+		err = unix.Mkfifo(inputName, 0666)
 		orDie(err)
 		inputFile, err = os.OpenFile(inputName, os.O_RDONLY, os.ModeNamedPipe)
+		os.Stderr.WriteString("Reached Here? \n")
 		orDie(err)
 	}
 	if outputName != "-" {
-		err = syscall.Mkfifo(outputName, 0666)
+		os.Stderr.WriteString(outputName)
+		os.Stderr.WriteString("is the output \n")
+		os.Remove(outputName)
+		err = unix.Mkfifo(outputName, 0666)
 		orDie(err)
 		outputFile, err = os.OpenFile(outputName, os.O_WRONLY, os.ModeNamedPipe)
 	}
@@ -111,6 +118,9 @@ func main() {
 	// Create the window with the above hints
 	window, err := glfw.CreateWindow(W, H, "Snek3D-Frontend", nil, nil)
 	orDie(err)
+	window.Focus()
+	window.Maximize()
+	window.Restore()
 	// Load the icon file
 	icoFile, err := os.Open("ico.png")
 	orDie(err)
@@ -119,6 +129,7 @@ func main() {
 	orDie(err)
 	window.SetIcon([]image.Image{ico})
 	window.MakeContextCurrent()
+	window.SetKeyCallback(HandleKeys)
 	// OpenGL Initialization
 	// Check for the version
 	//version := gl.GoStr(gl.GetString(gl.VERSION))
@@ -189,7 +200,19 @@ func main() {
 	lenBits = lenBitsBytes[0]
 	coordBytes = make([]byte, lenBits>>3)
 	inputFile.Read(coordBytes)
-	bytesToU64 = endianness.Uint64
+	switch lenBits {
+	case 8:
+		bytesToU64 = func(a []byte) uint64 {
+			return uint64(a[0])
+		}
+	case 16:
+		bytesToU64 = func(a []byte) uint64 { return uint64(endianness.Uint16(a)) }
+	case 32:
+		bytesToU64 = func(a []byte) uint64 { return uint64(endianness.Uint32(a)) }
+	case 64:
+		bytesToU64 = endianness.Uint64
+	}
+
 	maxWorldX = float64(bytesToU64(coordBytes))
 	inputFile.Read(coordBytes)
 	maxWorldY = float64(bytesToU64(coordBytes))
@@ -202,9 +225,11 @@ func main() {
 		// Actually draw something
 		//		b.Draw()
 		framesDrawn++
+		fmt.Fprintf(os.Stderr, "Snake kitna lamba hai: %d", len(Snake))
 		for _, v := range Snake {
 			WhiteCube.ModelMat = mgl32.Translate3D(v.X(), v.Y(), v.Z())
 			WhiteCube.Draw()
+			os.Stderr.WriteString("Here?")
 		}
 		RedCube.ModelMat = mgl32.Translate3D(Food.X(), Food.Y(), Food.Z())
 		RedCube.Draw()
@@ -236,5 +261,6 @@ func NextFrame() (SnekPos []mgl32.Vec3, foodPos mgl32.Vec3) {
 		z := float32(float64(bytesToU64(coordBytes)) / maxWorldZ)
 		SnekPos = append(SnekPos, mgl32.Vec3{x, y, z})
 	}
+	fmt.Fprintf(os.Stderr, "SnekPos: %+v, FoodPos: %+v", SnekPos, foodPos)
 	return SnekPos, foodPos
 }

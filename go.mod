@@ -1,4 +1,4 @@
-module github.com/eternalfrustation/Snek3D-Frontend
+module github.com/eternalfrustation/Snek3D-Client
 
 go 1.16
 
@@ -8,4 +8,5 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20211204153444-caad923f49f4
 	github.com/go-gl/mathgl v1.0.0
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 )

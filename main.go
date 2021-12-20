@@ -202,9 +202,7 @@ func main() {
 	inputFile.Read(coordBytes)
 	switch lenBits {
 	case 8:
-		bytesToU64 = func(a []byte) uint64 {
-			return uint64(a[0])
-		}
+		bytesToU64 = func(a []byte) uint64 { return uint64(a[0]) }
 	case 16:
 		bytesToU64 = func(a []byte) uint64 { return uint64(endianness.Uint16(a)) }
 	case 32:

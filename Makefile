@@ -1,9 +1,18 @@
-release:
+release: deps
 	go fmt
 	go mod tidy
-	go build -ldflags "-s -w"
+	go build -o build/ -ldflags "-s -w"
 
-debug:
+debug: deps
 	go fmt
 	go mod tidy
-	go build -ldflags "-n"
+	go build -o build/ -ldflags "-n"
+
+deps:
+	mkdir -p build/
+	cp ico.png build/
+	cp frag.frag build/
+	cp vertex.vert build/
+
+clean:
+	rm -rf build/

@@ -52,8 +52,11 @@ func (p *Point) Dist(p1 *Point) float32 {
 	return float32(math.Sqrt(float64((p.X()-p1.X())*(p.X()-p1.X()) + (p.Y()+p1.Y())*(p.Y()+p1.Y())*(p.Y()+p1.Y()))))
 }
 
-/* Returns a point with x, y, z as its position with white color and normal in the
-positive z axis */
+/*
+	Returns a point with x, y, z as its position with white color and normal in the
+
+positive z axis
+*/
 func P(x, y, z float32) *Point {
 	return &Point{P: mgl32.Vec3{x, y, z},
 		C: mgl32.Vec4{1, 1, 1, 1},
@@ -62,8 +65,11 @@ func P(x, y, z float32) *Point {
 	}
 }
 
-/* Returns a point with x, y, z as its position,  r,g,b,a as red, green,
-blue and alpha respectively and normal in the positive z axis direction */
+/*
+	Returns a point with x, y, z as its position,  r,g,b,a as red, green,
+
+blue and alpha respectively and normal in the positive z axis direction
+*/
 func PC(x, y, z, r, g, b, a float32) *Point {
 	return &Point{P: mgl32.Vec3{x, y, z},
 		C: mgl32.Vec4{r, g, b, a},
@@ -72,8 +78,11 @@ func PC(x, y, z, r, g, b, a float32) *Point {
 	}
 }
 
-/* Returns a point with x, y, z as its position,  r,g,b,a as red, green,
-blue and alpha respectively and normal in the direction of normal of i,j,k */
+/*
+	Returns a point with x, y, z as its position,  r,g,b,a as red, green,
+
+blue and alpha respectively and normal in the direction of normal of i,j,k
+*/
 func PCN(x, y, z, r, g, b, a, i, j, k float32) *Point {
 	return &Point{P: mgl32.Vec3{x, y, z},
 		C: mgl32.Vec4{r, g, b, a},

@@ -183,7 +183,7 @@ func main() {
 	WhiteCube.GenVao()
 	RedCube.GenVao()
 	_, metaRaw, err := c.ReadMessage()
-	fmt.Println(metaRaw)
+	fmt.Printf("%X\n", metaRaw)
 	orDie(err)
 	lenInt = metaRaw[0] / 8
 	fmt.Println("lenInt")

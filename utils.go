@@ -72,6 +72,11 @@ func UpdateUniformMat4fv(name string, prog uint32, value *float32) {
 
 }
 
+func UpdateUniformVec4(name string, prog uint32, value *float32) {
+	UniformLocation := gl.GetUniformLocation(prog, gl.Str(name+"\x00"))
+	gl.Uniform4fv(UniformLocation, 1, value)
+
+}
 func Refresh(w *glfw.Window) {
 	width, height := w.GetFramebufferSize()
 	gl.Viewport(0, 0, int32(width), int32(height))
@@ -270,7 +275,6 @@ func BvgP(p *bvg.Point) *Point {
 	)
 }
 
-//
 func BvgS(b *bvg.Bvg) []Drawable {
 	// Sum of number of all the individual shapes in b
 	// +2 for lines and points

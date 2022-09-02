@@ -6,41 +6,41 @@ import (
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/gorilla/websocket"
 )
 
 func HandleKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	switch key {
 	case glfw.KeyEscape:
-		outputFile.Write([]byte{byte('E')})
+		c.WriteMessage(websocket.BinaryMessage, []byte{byte('E')})
 		w.SetShouldClose(true)
 		w.Destroy()
 		os.Exit(0)
 	case glfw.KeyUp:
-		outputFile.Write([]byte{byte('x')})
+		c.WriteMessage(websocket.BinaryMessage, []byte{byte('x')})
 	case glfw.KeyDown:
 
-		outputFile.Write([]byte{byte('X')})
+		c.WriteMessage(websocket.BinaryMessage, []byte{byte('X')})
 
 	case glfw.KeyRight:
 
-		outputFile.Write([]byte{byte('z')})
+		c.WriteMessage(websocket.BinaryMessage, []byte{byte('z')})
 
 	case glfw.KeyLeft:
 
-		outputFile.Write([]byte{byte('Z')})
+		c.WriteMessage(websocket.BinaryMessage, []byte{byte('Z')})
 
 	case glfw.KeySpace:
 
-		outputFile.Write([]byte{byte('y')})
+		c.WriteMessage(websocket.BinaryMessage, []byte{byte('y')})
 
 	case glfw.KeyZ:
 
-		outputFile.Write([]byte{byte('Y')})
+		c.WriteMessage(websocket.BinaryMessage, []byte{byte('Y')})
 	default:
-		outputFile.Write([]byte{byte('F')})
+		c.WriteMessage(websocket.BinaryMessage, []byte{byte('F')})
 	}
-	Snake, Food = NextFrame()
-	fmt.Fprintf(os.Stderr, "Snake: %+v, Food: %+v", Snake, Food)
+	to_be_rendered = NextFrame()
 }
 
 func HandleMouseMovement(w *glfw.Window, xpos, ypos float64) {

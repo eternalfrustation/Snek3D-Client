@@ -2,18 +2,21 @@ package main
 
 import (
 	"encoding/binary"
+	"flag"
 	"fmt"
-	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/go-gl/mathgl/mgl32"
-	"golang.org/x/sys/unix"
 	"image"
 	"image/png"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"runtime"
 	"time"
 	"unsafe"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -58,41 +61,25 @@ var (
 	framesDrawn                     int
 	Ident                           = mgl32.Ident4()
 	endianness                      binary.ByteOrder
-	Snake                           []mgl32.Vec3
-	Food                            mgl32.Vec3
-	inputFile                       *os.File
-	outputFile                      *os.File
 	coordBytes                      []byte
 	bytesToU64                      func(inputBytes []byte) uint64
 	lenPoints                       uint16
-	lenBits                         byte
-	maxWorldX, maxWorldY, maxWorldZ float64
+	maxWorldX, maxWorldY, maxWorldZ float32
+	addr                            = flag.String("addr", "localhost:6969", "Snek Server address with port")
+	c                               *websocket.Conn
+	score                           uint32
+	gameEnded                       bool
+	lenInt                          uint8
+	to_be_rendered                  []*Point
 )
 
 func main() {
-	inputName := os.Args[1]
-	outputName := os.Args[2]
-	inputFile = os.Stdin
-	outputFile = os.Stdout
-	var err error
-	if inputName != "-" {
-		os.Stderr.WriteString(inputName)
-		os.Stderr.WriteString("is the input \n")
-		os.Remove(inputName)
-		err = unix.Mkfifo(inputName, 0666)
-		orDie(err)
-		inputFile, err = os.OpenFile(inputName, os.O_RDONLY, os.ModeNamedPipe)
-		os.Stderr.WriteString("Reached Here? \n")
-		orDie(err)
-	}
-	if outputName != "-" {
-		os.Stderr.WriteString(outputName)
-		os.Stderr.WriteString("is the output \n")
-		os.Remove(outputName)
-		err = unix.Mkfifo(outputName, 0666)
-		orDie(err)
-		outputFile, err = os.OpenFile(outputName, os.O_WRONLY, os.ModeNamedPipe)
-	}
+	flag.Parse()
+	u := url.URL{Scheme: "ws", Host: *addr}
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	orDie(err)
+	defer c.Close()
+
 	buf := [2]byte{}
 	*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)
 
@@ -195,27 +182,25 @@ func main() {
 	RedCube.SetTypes(gl.LINE_LOOP)
 	WhiteCube.GenVao()
 	RedCube.GenVao()
-	lenBitsBytes := make([]byte, 1)
-	inputFile.Read(lenBitsBytes)
-	lenBits = lenBitsBytes[0]
-	coordBytes = make([]byte, lenBits>>3)
-	inputFile.Read(coordBytes)
-	switch lenBits {
-	case 8:
+	_, metaRaw, err := c.ReadMessage()
+	fmt.Println(metaRaw)
+	orDie(err)
+	lenInt = metaRaw[0] / 8
+	fmt.Println("lenInt")
+	fmt.Println(lenInt)
+	switch lenInt {
+	case 1:
 		bytesToU64 = func(a []byte) uint64 { return uint64(a[0]) }
-	case 16:
+	case 2:
 		bytesToU64 = func(a []byte) uint64 { return uint64(endianness.Uint16(a)) }
-	case 32:
+	case 4:
 		bytesToU64 = func(a []byte) uint64 { return uint64(endianness.Uint32(a)) }
-	case 64:
+	case 8:
 		bytesToU64 = endianness.Uint64
 	}
-
-	maxWorldX = float64(bytesToU64(coordBytes))
-	inputFile.Read(coordBytes)
-	maxWorldY = float64(bytesToU64(coordBytes))
-	inputFile.Read(coordBytes)
-	maxWorldZ = float64(bytesToU64(coordBytes))
+	maxWorldX, maxWorldY, maxWorldZ = parseCoords(metaRaw[1 : 1+3*lenInt])
+	worldR, worldG, worldB := parseColors(metaRaw[1+3*lenInt : 4+3*lenInt])
+	gl.ClearColor(worldR, worldG, worldB, 1)
 	for !window.ShouldClose() {
 		time.Sleep(fps)
 		// Clear everything that was drawn previously
@@ -223,15 +208,14 @@ func main() {
 		// Actually draw something
 		//		b.Draw()
 		framesDrawn++
-		fmt.Fprintf(os.Stderr, "Snake kitna lamba hai: %d", len(Snake))
-		for _, v := range Snake {
+		fmt.Fprintf(os.Stderr, "Snake kitna lamba hai: %d", len(to_be_rendered)-1)
+		for _, v := range to_be_rendered {
+			UpdateUniformVec4("current_color", program, &v.C[0])
 			WhiteCube.ModelMat = mgl32.Translate3D(v.X(), v.Y(), v.Z())
 			WhiteCube.Draw()
 			os.Stderr.WriteString("Here?")
 		}
-		RedCube.ModelMat = mgl32.Translate3D(Food.X(), Food.Y(), Food.Z())
-		RedCube.Draw()
-		//		fnt.GlyphMap['e'].Draw()
+		// fnt.GlyphMap['e'].Draw()
 		// display everything that was drawn
 		window.SwapBuffers()
 		// check for any events
@@ -239,26 +223,41 @@ func main() {
 	}
 }
 
-func NextFrame() (SnekPos []mgl32.Vec3, foodPos mgl32.Vec3) {
-	lenPointsBytes := make([]byte, 2)
-	inputFile.Read(lenPointsBytes)
-	lenPoints = binary.BigEndian.Uint16(lenPointsBytes)
-	inputFile.Read(coordBytes)
-	foodX := float32(float64(bytesToU64(coordBytes)) / maxWorldX)
-	inputFile.Read(coordBytes)
-	foodY := float32(float64(bytesToU64(coordBytes)) / maxWorldY)
-	inputFile.Read(coordBytes)
-	foodZ := float32(float64(bytesToU64(coordBytes)) / maxWorldZ)
-	foodPos = mgl32.Vec3{foodX, foodY, foodZ}
-	for i := uint64(3 + uint64(lenBits>>3)*3); i < uint64(lenPoints*uint16(lenBits>>3)); i += uint64(lenBits>>3) * 3 {
-		inputFile.Read(coordBytes)
-		x := float32(float64(bytesToU64(coordBytes)) / maxWorldX)
-		inputFile.Read(coordBytes)
-		y := float32(float64(bytesToU64(coordBytes)) / maxWorldY)
-		inputFile.Read(coordBytes)
-		z := float32(float64(bytesToU64(coordBytes)) / maxWorldZ)
-		SnekPos = append(SnekPos, mgl32.Vec3{x, y, z})
+func NextFrame() []*Point {
+	_, dataRaw, err := c.ReadMessage()
+	orDie(err)
+	numPoints := binary.BigEndian.Uint32(dataRaw[0:4])
+	if numPoints == 0 {
+		fmt.Println("Game Over")
+		_, scoreRaw, err := c.ReadMessage()
+		orDie(err)
+		score = binary.BigEndian.Uint32(scoreRaw)
+		gameEnded = true
 	}
-	fmt.Fprintf(os.Stderr, "SnekPos: %+v, FoodPos: %+v", SnekPos, foodPos)
-	return SnekPos, foodPos
+	points := make([]*Point, numPoints)
+	for i := 0; i < int(numPoints); i++ {
+		pointRaw := dataRaw[4+i*3*int(lenInt) : 4+i*int(3*lenInt+3)]
+		points[i] = parsePoint(pointRaw)
+	}
+	return points
+}
+
+func parseCoords(size []byte) (float32, float32, float32) {
+	x := bytesToU64(size[0:lenInt])
+	y := bytesToU64(size[lenInt : 2*lenInt])
+	z := bytesToU64(size[2*lenInt : 3*lenInt])
+	return float32(x), float32(y), float32(z)
+}
+
+func parseColors(colors []byte) (float32, float32, float32) {
+	r := float32(colors[0]) / 255
+	g := float32(colors[1]) / 255
+	b := float32(colors[2]) / 255
+	return r, g, b
+}
+
+func parsePoint(point []byte) *Point {
+	x, y, z := parseCoords(point[0 : 3*lenInt])
+	r, g, b := parseColors(point[3*lenInt : 3*lenInt+3])
+	return PC(x, y, z, r, g, b, 1)
 }

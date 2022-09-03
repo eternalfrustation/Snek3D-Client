@@ -24,6 +24,18 @@ type Drawable interface {
 	GenVao()
 }
 
+type keyStack []glfw.Key
+
+func (s *keyStack) Push(v glfw.Key) {
+	*s = append(*s, v)
+}
+
+func (s *keyStack) Pop() glfw.Key {
+	res := (*s)[len(*s)-1]
+	*s = (*s)[:len(*s)-1]
+	return res
+}
+
 type Point struct {
 	// Position Vectors
 	P mgl32.Vec3

@@ -16,7 +16,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/gorilla/websocket"
+	"golang.org/x/net/websocket"
 )
 
 const (
@@ -65,18 +65,18 @@ var (
 	bytesToU64                      func(inputBytes []byte) uint64
 	lenPoints                       uint16
 	maxWorldX, maxWorldY, maxWorldZ float32
-	addr                            = flag.String("addr", "localhost:6969", "Snek Server address with port")
-	c                               *websocket.Conn
+	addr                            = flag.String("addr", "127.0.0.1:6969", "Snek Server address with port")
 	score                           uint32
 	gameEnded                       bool
 	lenInt                          uint8
-	to_be_rendered                  []*Point
+	keysPressed                     keyStack
 )
 
 func main() {
 	flag.Parse()
 	u := url.URL{Scheme: "ws", Host: *addr}
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	c, err := websocket.Dial(u.String(), "", "http://"+u.Hostname())
+	fmt.Println(u.String(), u.Hostname())
 	orDie(err)
 	defer c.Close()
 
@@ -116,7 +116,7 @@ func main() {
 	orDie(err)
 	window.SetIcon([]image.Image{ico})
 	window.MakeContextCurrent()
-	window.SetKeyCallback(HandleKeys)
+	window.SetKeyCallback(StoreKeys)
 	// OpenGL Initialization
 	// Check for the version
 	//version := gl.GoStr(gl.GetString(gl.VERSION))
@@ -182,8 +182,9 @@ func main() {
 	RedCube.SetTypes(gl.LINE_LOOP)
 	WhiteCube.GenVao()
 	RedCube.GenVao()
-	_, metaRaw, err := c.ReadMessage()
-	fmt.Printf("%X\n", metaRaw)
+	metaRaw := make([]byte, 1)
+	_, err = c.Read(metaRaw)
+	fmt.Println(metaRaw)
 	orDie(err)
 	lenInt = metaRaw[0] / 8
 	fmt.Println("lenInt")
@@ -198,18 +199,23 @@ func main() {
 	case 8:
 		bytesToU64 = endianness.Uint64
 	}
-	maxWorldX, maxWorldY, maxWorldZ = parseCoords(metaRaw[1 : 1+3*lenInt])
-	worldR, worldG, worldB := parseColors(metaRaw[1+3*lenInt : 4+3*lenInt])
+	metaRaw = make([]byte, 3+3*lenInt)
+	_, err = c.Read(metaRaw)
+	orDie(err)
+	maxWorldX, maxWorldY, maxWorldZ = parseCoords(metaRaw[0 : 3*lenInt])
+	worldR, worldG, worldB := parseColors(metaRaw[3*lenInt : 3+3*lenInt])
 	gl.ClearColor(worldR, worldG, worldB, 1)
+	keysPressed = make(keyStack, 0)
 	for !window.ShouldClose() {
 		time.Sleep(fps)
 		// Clear everything that was drawn previously
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		toBeRendered := handleKeys(keysPressed, c, window)
 		// Actually draw something
 		//		b.Draw()
 		framesDrawn++
-		fmt.Fprintf(os.Stderr, "Snake kitna lamba hai: %d", len(to_be_rendered)-1)
-		for _, v := range to_be_rendered {
+		fmt.Fprintf(os.Stderr, "Snake kitna lamba hai: %d\n", len(toBeRendered)-1)
+		for _, v := range toBeRendered {
 			UpdateUniformVec4("current_color", program, &v.C[0])
 			WhiteCube.ModelMat = mgl32.Translate3D(v.X(), v.Y(), v.Z())
 			WhiteCube.Draw()
@@ -223,18 +229,67 @@ func main() {
 	}
 }
 
-func NextFrame() []*Point {
-	_, dataRaw, err := c.ReadMessage()
+func handleKeys(keys keyStack, c *websocket.Conn, w *glfw.Window) []*Point {
+	to_be_rendered := make([]*Point, 0)
+	for len(keys) > 0 {
+		fmt.Println(len(keys))
+		key := keys.Pop()
+		fmt.Println(key)
+		switch key {
+		case glfw.KeyEscape:
+			writeToWebsocket(c, []byte{'E'})
+			w.SetShouldClose(true)
+			w.Destroy()
+			os.Exit(0)
+		case glfw.KeyUp:
+			writeToWebsocket(c, []byte{'x'})
+		case glfw.KeyDown:
+			writeToWebsocket(c, []byte{'X'})
+		case glfw.KeyRight:
+			writeToWebsocket(c, []byte{'z'})
+
+		case glfw.KeyLeft:
+			writeToWebsocket(c, []byte{'Z'})
+
+		case glfw.KeySpace:
+			writeToWebsocket(c, []byte{'y'})
+
+		case glfw.KeyZ:
+			writeToWebsocket(c, []byte{'Y'})
+
+		default:
+			writeToWebsocket(c, []byte{'F'})
+		}
+		to_be_rendered = append(to_be_rendered, NextFrame(c)...)
+	}
+	return to_be_rendered
+}
+
+func writeToWebsocket(conn *websocket.Conn, data []byte) {
+	writer, err := conn.NewFrameWriter(websocket.BinaryFrame)
+	orDie(err)
+	writer.Write(data)
+}
+
+func NextFrame(c *websocket.Conn) []*Point {
+	dataRaw := make([]byte, 4)
+	dataReader, err := c.NewFrameReader()
+	orDie(err)
+	_, err = dataReader.Read(dataRaw)
+	orDie(err)
+	fmt.Println(dataRaw)
 	orDie(err)
 	numPoints := binary.BigEndian.Uint32(dataRaw[0:4])
 	if numPoints == 0 {
 		fmt.Println("Game Over")
-		_, scoreRaw, err := c.ReadMessage()
+		scoreRaw := make([]byte, 4)
+		_, err := dataReader.Read(scoreRaw)
 		orDie(err)
 		score = binary.BigEndian.Uint32(scoreRaw)
 		gameEnded = true
 	}
 	points := make([]*Point, numPoints)
+	dataRaw = make([]byte, 4+int(numPoints)*int(3*lenInt+3))
 	for i := 0; i < int(numPoints); i++ {
 		pointRaw := dataRaw[4+i*3*int(lenInt) : 4+i*int(3*lenInt+3)]
 		points[i] = parsePoint(pointRaw)

@@ -7,6 +7,6 @@ require (
 	github.com/go-gl/gl v0.0.0-20211025173605-bda47ffaa784
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20211204153444-caad923f49f4
 	github.com/go-gl/mathgl v1.0.0
-	github.com/gorilla/websocket v1.5.0
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f
+	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b
 )

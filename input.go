@@ -2,45 +2,13 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/gorilla/websocket"
 )
 
-func HandleKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	switch key {
-	case glfw.KeyEscape:
-		c.WriteMessage(websocket.BinaryMessage, []byte{byte('E')})
-		w.SetShouldClose(true)
-		w.Destroy()
-		os.Exit(0)
-	case glfw.KeyUp:
-		c.WriteMessage(websocket.BinaryMessage, []byte{byte('x')})
-	case glfw.KeyDown:
-
-		c.WriteMessage(websocket.BinaryMessage, []byte{byte('X')})
-
-	case glfw.KeyRight:
-
-		c.WriteMessage(websocket.BinaryMessage, []byte{byte('z')})
-
-	case glfw.KeyLeft:
-
-		c.WriteMessage(websocket.BinaryMessage, []byte{byte('Z')})
-
-	case glfw.KeySpace:
-
-		c.WriteMessage(websocket.BinaryMessage, []byte{byte('y')})
-
-	case glfw.KeyZ:
-
-		c.WriteMessage(websocket.BinaryMessage, []byte{byte('Y')})
-	default:
-		c.WriteMessage(websocket.BinaryMessage, []byte{byte('F')})
-	}
-	to_be_rendered = NextFrame()
+func StoreKeys(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	keysPressed.Push(key)
 }
 
 func HandleMouseMovement(w *glfw.Window, xpos, ypos float64) {
